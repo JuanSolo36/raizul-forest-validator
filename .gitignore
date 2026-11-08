@@ -1,7 +1,9 @@
 # Python & Entornos Virtuales
 venv/
 .venv/
-__pycache__/
+backend/venv/
+backend/.venv/
+**/__pycache__/
 *.py[cod]
 *$py.class
 *.so
@@ -14,7 +16,9 @@ htmlcov/
 
 # Node.js & Frontend Builds
 node_modules/
+**/node_modules/
 dist/
+**/dist/
 dist-ssr/
 *.local
 npm-debug.log*
