@@ -1,0 +1,17 @@
+{
+  "type": "Feature",
+  "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+      [
+        [-76.5300, 3.4500],
+        [-76.5200, 3.4600],
+        [-76.5100, 3.4400],
+        [-76.5300, 3.4500]
+      ]
+    ]
+  },
+  "properties": {
+    "farm_id": "finca_el_paraiso_01"
+  }
+}
