@@ -1,4 +1,4 @@
-# Raizul Forest Validator 🌳🍫
+# Raizul Forest Validator 
 **Validador Geoespacial y Monitoreo Satelital de Cobertura Forestal para Predios Cacaoteros en Colombia**
 
 [![Python 3.11](https://img.shields.io/badge/Python-3.11-3776AB?logo=python&logoColor=white)](https://www.python.org/)
