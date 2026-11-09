@@ -16,28 +16,52 @@ import {
   ResponsiveContainer,
   Legend
 } from 'recharts';
-import { AlertaTemporal } from '../types';
+import { AlertaTemporal, EstadoConsulta } from '../types';
 
 interface AlertsTimelineChartProps {
   serieTemporal: AlertaTemporal[];
   periodo?: string;
   totalAlertas?: number | null;
+  estadoConsulta?: EstadoConsulta;
+  mensaje?: string | null;
 }
 
 export const AlertsTimelineChart: React.FC<AlertsTimelineChartProps> = ({
   serieTemporal,
   periodo,
-  totalAlertas
+  totalAlertas,
+  estadoConsulta = 'exitosa',
+  mensaje
 }) => {
-  if (!serieTemporal || serieTemporal.length === 0 || (totalAlertas !== undefined && totalAlertas === 0)) {
+  if (
+    !serieTemporal ||
+    serieTemporal.length === 0 ||
+    (totalAlertas !== undefined && totalAlertas === 0) ||
+    estadoConsulta !== 'exitosa'
+  ) {
     return (
       <Paper elevation={2} sx={{ p: 2.5, borderRadius: 2, backgroundColor: '#ffffff' }}>
         <Typography variant="subtitle1" fontWeight={700} color="#1b4d3e" gutterBottom>
           Evolución de Alertas Satelitales (GFW Integrated Alerts)
         </Typography>
-        <Alert severity="success" sx={{ mt: 1, borderRadius: 2 }}>
-          <strong>Sin perturbación reciente detectada:</strong> Cero alertas satelitales en el periodo analizado ({periodo ?? 'post-2020'}). La cobertura forestal del predio se mantiene preservada.
-        </Alert>
+
+        {estadoConsulta === 'error' && (
+          <Alert severity="error" sx={{ mt: 1, borderRadius: 2 }}>
+            <strong>Fallo en la consulta:</strong> Ocurrió un error al consultar las alertas satelitales recientes en Global Forest Watch. {mensaje ? `Detalle: ${mensaje}` : 'Intente nuevamente.'}
+          </Alert>
+        )}
+
+        {estadoConsulta === 'no_disponible' && (
+          <Alert severity="warning" sx={{ mt: 1, borderRadius: 2 }}>
+            <strong>Alertas no disponibles:</strong> El servicio satelital de alertas integradas no respondió temporalmente. <em>Nota importante:</em> La falta de telemetría de alertas no certifica la ausencia de deforestación.
+          </Alert>
+        )}
+
+        {estadoConsulta === 'exitosa' && (
+          <Alert severity="success" sx={{ mt: 1, borderRadius: 2 }}>
+            <strong>Sin alertas satelitales registradas:</strong> No se detectaron eventos de pérdida en el dataset integrado (GLAD/RADD) para el periodo analizado ({periodo ?? 'post-2020'}). <em>Nota:</em> La telemetría satelital complementa, pero no sustituye, las auditorías de campo.
+          </Alert>
+        )}
       </Paper>
     );
   }

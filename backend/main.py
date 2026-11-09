@@ -23,7 +23,7 @@ logger = logging.getLogger("raizul_api")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    #"""Administra el ciclo de vida del servidor (apertura y cierre de recursos)."""
+    #Administra el ciclo de vida del servidor (apertura y cierre de recursos).
     logger.info("Iniciando servicio Raizul Forest Validator...")
     yield
     logger.info("Cerrando pool de conexiones HTTP hacia GFW...")
@@ -39,10 +39,18 @@ app = FastAPI(
     redoc_url="/redoc"
 )
 
-# Configuración de CORS
+# Configuración de CORS dinámica según ALLOWED_ORIGINS (alineado con DEPLOY.md)
+_allowed_origins = [
+    origin.strip()
+    for origin in settings.ALLOWED_ORIGINS.split(",")
+    if origin.strip()
+]
+if not _allowed_origins or "*" in _allowed_origins:
+    _allowed_origins = ["*"]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=_allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

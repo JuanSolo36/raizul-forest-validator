@@ -238,6 +238,8 @@ export const App: React.FC = () => {
                   <LossChart
                     historico={result.analisis_historico.historico}
                     anoPico={result.analisis_historico.ano_mayor_perdida}
+                    estadoConsulta={result.analisis_historico.estado_consulta}
+                    mensaje={result.analisis_historico.mensaje}
                   />
 
                   {/* Gráfico 2: Evolución de Alertas Satelitales */}
@@ -245,6 +247,8 @@ export const App: React.FC = () => {
                     serieTemporal={result.analisis_alertas.serie_temporal}
                     periodo={result.analisis_alertas.periodo}
                     totalAlertas={result.analisis_alertas.total_registros}
+                    estadoConsulta={result.analisis_alertas.estado_consulta}
+                    mensaje={result.analisis_alertas.mensaje}
                   />
                 </Box>
               ) : (

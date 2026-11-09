@@ -25,25 +25,47 @@ import {
   ResponsiveContainer,
   Cell
 } from 'recharts';
-import { PerdidaAnual } from '../types';
+import { PerdidaAnual, EstadoConsulta } from '../types';
 
 interface LossChartProps {
   historico: PerdidaAnual[];
   anoPico?: number | null;
+  estadoConsulta?: EstadoConsulta;
+  mensaje?: string | null;
 }
 
-export const LossChart: React.FC<LossChartProps> = ({ historico, anoPico }) => {
+export const LossChart: React.FC<LossChartProps> = ({
+  historico,
+  anoPico,
+  estadoConsulta = 'exitosa',
+  mensaje
+}) => {
   const [viewMode, setViewMode] = useState<'chart' | 'table'>('chart');
 
-  if (!historico || historico.length === 0) {
+  if (!historico || historico.length === 0 || estadoConsulta !== 'exitosa') {
     return (
       <Paper elevation={2} sx={{ p: 3, borderRadius: 2 }}>
         <Typography variant="h6" fontWeight={600} color="#1b4d3e" gutterBottom>
           Histórico de Pérdida de Cobertura Arbórea
         </Typography>
-        <Alert severity="info" sx={{ mt: 1 }}>
-          No se registró pérdida histórica de cobertura arbórea detectada por satélite en este predio.
-        </Alert>
+
+        {estadoConsulta === 'error' && (
+          <Alert severity="error" sx={{ mt: 1, borderRadius: 2 }}>
+            <strong>Fallo en la consulta:</strong> No fue posible recuperar la serie histórica de pérdida arbórea en Global Forest Watch. {mensaje ? `Detalle: ${mensaje}` : 'Verifique la conexión o intente nuevamente.'}
+          </Alert>
+        )}
+
+        {estadoConsulta === 'no_disponible' && (
+          <Alert severity="warning" sx={{ mt: 1, borderRadius: 2 }}>
+            <strong>Información no disponible:</strong> El dataset histórico de pérdida arbórea (UMD) no reportó datos para este polígono o el servicio está fuera de línea temporalmente.
+          </Alert>
+        )}
+
+        {estadoConsulta === 'exitosa' && (
+          <Alert severity="info" sx={{ mt: 1, borderRadius: 2 }}>
+            <strong>Sin pérdida detectada:</strong> No se registró pérdida histórica de cobertura arbórea en los registros satelitales disponibles (2001-2023) para este predio.
+          </Alert>
+        )}
       </Paper>
     );
   }

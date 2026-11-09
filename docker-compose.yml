@@ -11,8 +11,9 @@ services:
     environment:
       - PORT=8080
       - HOST=0.0.0.0
-      - GFW_API_KEY=092d42cf-281d-4da1-a7c6-96a9ecff6cb4
-      - GFW_ORIGIN_HEADER=https://www.globalforestwatch.org
+      - GFW_API_KEY=${GFW_API_KEY:-}
+      - GFW_ORIGIN_HEADER=${GFW_ORIGIN_HEADER:-https://www.globalforestwatch.org}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-*}
     restart: unless-stopped
 
   frontend:

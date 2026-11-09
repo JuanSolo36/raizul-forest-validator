@@ -129,14 +129,18 @@ class EvaluacionRiesgo(BaseModel):
 # ==============================================================================
 
 class ForestSummary(BaseModel):
-    current_tree_cover_pct: float = Field(
-        ..., description="Porcentaje estimado de cobertura arbórea actual."
+    current_tree_cover_pct: Optional[float] = Field(
+        None,
+        description="Porcentaje estimado de cobertura arbórea actual. Se reporta None si no se cuenta con sensor de densidad base (TCD 2000 con umbral definido) para evitar la suposición incorrecta de 100% de cobertura inicial en predios agrícolas."
     )
     deforestation_risk_level: RiskLevelEn = Field(
         ..., description="Nivel de riesgo de deforestación ('Low', 'Medium', 'High', 'Not evaluable')."
     )
     critical_alert: bool = Field(
-        ..., description="Indicador booleano de alertas críticas detectadas."
+        ..., description="Indicador booleano de alertas satelitales críticas activas recientes post-2020."
+    )
+    observacion_cobertura: Optional[str] = Field(
+        None, description="Nota metodológica sobre la fuente y calibración de la cobertura arbórea."
     )
 
 class TreeCoverLossEntry(BaseModel):

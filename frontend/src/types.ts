@@ -5,9 +5,10 @@ export type RiskLevelEn = 'Low' | 'Medium' | 'High' | 'Not evaluable';
 export type EstadoGeneral = 'completo' | 'parcial' | 'fallido';
 
 export interface ForestSummary {
-  current_tree_cover_pct: number;
+  current_tree_cover_pct: number | null;
   deforestation_risk_level: RiskLevelEn;
   critical_alert: boolean;
+  observacion_cobertura?: string | null;
 }
 
 export interface TreeCoverLossEntry {

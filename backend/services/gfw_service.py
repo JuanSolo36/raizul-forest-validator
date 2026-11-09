@@ -96,10 +96,10 @@ class GFWService:
         #Consulta 1: Serie histórica de pérdida de cobertura arbórea (UMD Tree Cover Loss).
         #Utiliza 'FROM results' según la documentación técnica de GFW.
         url = f"{self.base_url}/dataset/umd_tree_cover_loss/latest/query/json"
+        # Consulta estándar de pérdida histórica anual por año (robusta y compatible)
         sql = (
             "SELECT umd_tree_cover_loss__year as year, "
-            "SUM(area__ha) as loss_area_ha, "
-            "SUM(gfw_forest_carbon_gross_emissions__Mg_CO2e) as co2_emissions_mg "
+            "SUM(area__ha) as loss_area_ha "
             "FROM results "
             "GROUP BY umd_tree_cover_loss__year "
             "ORDER BY umd_tree_cover_loss__year"
@@ -122,13 +122,12 @@ class GFWService:
             for row in results:
                 year = row.get("year")
                 loss_ha = row.get("loss_area_ha") or 0.0
-                co2 = row.get("co2_emissions_mg")
                 if year is not None:
                     historico.append(
                         PerdidaAnual(
                             ano=int(year),
                             perdida_ha=round(float(loss_ha), 4),
-                            emisiones_co2_mg=round(float(co2), 2) if co2 is not None else None
+                            emisiones_co2_mg=None
                         )
                     )
 
@@ -145,11 +144,17 @@ class GFWService:
                 mensaje="Consulta histórica procesada con éxito."
             )
 
-        except Exception as exc:
-            logger.error(f"Fallo de conexión consultando UMD Loss: {exc}")
+        except httpx.RequestError as exc:
+            logger.error(f"Fallo de red consultando UMD Loss: {exc}")
             return AnalisisHistoricoLoss(
-                estado_consulta="no_disponible",
-                mensaje=f"Error de conexión con el dataset de pérdida histórica: {str(exc)}"
+                estado_consulta="error",
+                mensaje=f"Error de conexión de red con el dataset de pérdida histórica: {str(exc)}"
+            )
+        except Exception as exc:
+            logger.error(f"Fallo inesperado consultando UMD Loss: {exc}")
+            return AnalisisHistoricoLoss(
+                estado_consulta="error",
+                mensaje=f"Error inesperado al procesar la pérdida histórica: {str(exc)}"
             )
 
     async def get_integrated_alerts(
@@ -192,7 +197,7 @@ class GFWService:
         {where_clause} 
         GROUP BY gfw_integrated_alerts__date, gfw_integrated_alerts__confidence 
         ORDER BY gfw_integrated_alerts__date DESC 
-        LIMIT 50
+        LIMIT 500
         """
 
         try:
@@ -267,14 +272,23 @@ class GFWService:
                 mensaje="Consulta de alertas procesada con éxito."
             )
 
-        except Exception as exc:
-            logger.error(f"Fallo consultando alertas: {exc}")
+        except httpx.RequestError as exc:
+            logger.error(f"Fallo de red consultando GFW Alerts: {exc}")
             return AnalisisAlertas(
-                estado_consulta="no_disponible",
+                estado_consulta="error",
                 periodo=periodo_nombre,
                 fecha_inicio=fecha_inicio,
                 fecha_fin=fecha_fin,
-                mensaje=f"Error de red o timeout consultando alertas: {str(exc)}"
+                mensaje=f"Error de red al consultar el servicio de alertas satelitales: {str(exc)}"
+            )
+        except Exception as exc:
+            logger.error(f"Fallo inesperado consultando GFW Alerts: {exc}")
+            return AnalisisAlertas(
+                estado_consulta="error",
+                periodo=periodo_nombre,
+                fecha_inicio=fecha_inicio,
+                fecha_fin=fecha_fin,
+                mensaje=f"Error inesperado al procesar alertas satelitales: {str(exc)}"
             )
 
     @staticmethod
@@ -378,10 +392,25 @@ class GFWService:
             'No evaluable': 'Not evaluable'
         }
         deforestation_risk_level = riesgo_en_map.get(evaluacion_riesgo.nivel_riesgo, 'Medium')
+        # Hallazgo 4: Separación conceptual de critical_alert
+        # critical_alert representa estrictamente detección satelital activa post-2020 (>=1 alta o >=5 nominales).
+        # El nivel de riesgo general se evalúa independientemente en deforestation_risk_level.
         altas = analisis_alertas.alta_confianza or 0
-        critical_alert = (altas >= 5) or (evaluacion_riesgo.nivel_riesgo == 'Alto')
+        nominales = analisis_alertas.confianza_nominal or 0
+        critical_alert = bool(
+            analisis_alertas.estado_consulta == "exitosa" and (altas >= 1 or nominales >= 5)
+        )
+
+        # Hallazgo 2: Cálculo honesto y científicamente válido de cobertura arbórea
+        # No se asume 100% de cobertura previa en predios agrícolas.
+        # Requiere sensor de densidad con umbral definido (ej. UMD TCD 2000 >30%). Si no está calibrado, reporta None.
+        current_tree_cover_pct = None
         pct_perdida = analisis_historico.porcentaje_perdida or 0.0
-        current_tree_cover_pct = max(0.0, round(100.0 - pct_perdida, 1))
+        observacion_cobertura = (
+            f"Pérdida acumulada: {pct_perdida:.2f}% del predio. "
+            "La cobertura actual requiere calibración con inventario base de dosel (ej. TCD >30%); "
+            "no se asume 100% de cobertura inicial."
+        )
 
         tree_cover_loss_history = [
             TreeCoverLossEntry(
@@ -394,7 +423,8 @@ class GFWService:
         forest_summary = ForestSummary(
             current_tree_cover_pct=current_tree_cover_pct,
             deforestation_risk_level=deforestation_risk_level,
-            critical_alert=critical_alert
+            critical_alert=critical_alert,
+            observacion_cobertura=observacion_cobertura
         )
         analysis_timestamp = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
 
